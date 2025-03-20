@@ -49,10 +49,13 @@ const Customizer = () => {
 
   const handleSubmit = async (type) => {
     if(!prompt) return alert("Please enter a prompt");
-
+  
     try {
       setGeneratingImg(true);
-
+  
+      // Log the request
+      console.log("Sending request to DALL-E API with prompt:", prompt);
+  
       const response = await fetch('http://localhost:8080/api/v1/dalle', {
         method: 'POST',
         headers: {
@@ -61,19 +64,31 @@ const Customizer = () => {
         body: JSON.stringify({
           prompt,
         })
-      })
-
+      });
+  
+      // Check if response is ok
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API Error: ${errorData.message || response.statusText}`);
+      }
+  
       const data = await response.json();
-
-      handleDecals(type, `data:image/png;base64,${data.photo}`)
+      
+      // Validate that photo exists in the response
+      if (!data || !data.photo) {
+        throw new Error("Invalid response from server: Missing image data");
+      }
+  
+      console.log("Image received successfully");
+      handleDecals(type, `data:image/png;base64,${data.photo}`);
     } catch (error) {
-      alert(error)
+      console.error("Error generating image:", error);
+      alert(`Failed to generate image: ${error.message}`);
     } finally {
       setGeneratingImg(false);
       setActiveEditorTab("");
     }
   }
-
   const handleDecals = (type, result) => {
     const decalType = DecalTypes[type];
 

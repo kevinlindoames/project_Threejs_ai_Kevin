@@ -10,10 +10,20 @@ const Shirt = () => {
   const snap = useSnapshot(state);
   const { nodes, materials } = useGLTF('/shirt_baked.glb');
 
-  const logoTexture = useTexture(snap.logoDecal);
-  const fullTexture = useTexture(snap.fullDecal);
+  // Carga las texturas solo cuando estén disponibles
+  const logoTexture = snap.logoDecal ? useTexture(snap.logoDecal) : null;
+  const fullTexture = snap.fullDecal ? useTexture(snap.fullDecal) : null;
 
-  useFrame((state, delta) => easing.dampC(materials.lambert1.color, snap.color, 0.25, delta));
+  // Asignamos anisotropía correctamente después de cargar la textura
+  if (logoTexture) {
+    logoTexture.anisotropy = 16;
+  }
+
+  useFrame((state, delta) => {
+    if (materials && materials.lambert1) {
+      easing.dampC(materials.lambert1.color, snap.color, 0.25, delta);
+    }
+  });
 
   const stateString = JSON.stringify(snap);
 
@@ -26,7 +36,7 @@ const Shirt = () => {
         material-roughness={1}
         dispose={null}
       >
-        {snap.isFullTexture && (
+        {snap.isFullTexture && fullTexture && (
           <Decal 
             position={[0, 0, 0]}
             rotation={[0, 0, 0]}
@@ -35,13 +45,13 @@ const Shirt = () => {
           />
         )}
 
-        {snap.isLogoTexture && (
+        {snap.isLogoTexture && logoTexture && (
           <Decal 
             position={[0, 0.04, 0.15]}
             rotation={[0, 0, 0]}
             scale={0.15}
             map={logoTexture}
-            map-anisotropy={16}
+            // No usamos map-anisotropy aquí, ya la configuramos arriba
             depthTest={false}
             depthWrite={true}
           />
